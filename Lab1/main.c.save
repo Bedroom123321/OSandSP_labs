@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
+#include <getopt.h>
+
+void print_usage() {
+    printf("Usage: dirwalk [options] [dir]\n");
+    printf("Options:\n");
+    printf("  -l, --long        long listing format\n");
+    printf("  -t, --type        filter by type (f for file, d for directory)\n");
+}
+
+void list_directory(const char *path, int long_format, char type_filter) {
+    struct dirent *entry;
+    DIR *dp = opendir(path);
+
+    if (dp == NULL) {
+        perror("opendir");
+        return;
+    }
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (type_filter == 'f' && entry->d_type != DT_REG) continue;
+        if (type_filter == 'd' && entry->d_type != DT_DIR) continue;
+
+        if (long_format) {
+            printf("%s\n", entry->d_name); // Можно дополнить выводом атрибутов
+x        } else {
+            printf("%s ", entry->d_name);
+        }
+    }
+    printf("\n");
+    closedir(dp);
+}
+
+int main(int argc, char *argv[]) {
+    int long_format = 0;
+    char type_filter = '\0';
+    int opt;
+
+    while ((opt = getopt(argc, argv, "lt:")) != -1) {
+        switch (opt) {
+            case 'l':
+                long_format = 1;
+                break;
+            case 't':
+                if (strcmp(optarg, "f") == 0) {
+                    type_filter = 'f';
+                } else if (strcmp(optarg, "d") == 0) {
+                    type_filter = 'd';
+                }
+                break;
+            default:
+                print_usage();
+                exit(EXIT_FAILURE);
+        }
+    }
+
+    const char *dir = (optind < argc) ? argv[optind] : "."; // По умолчанию текущий каталог
+
+    list_directory(dir, long_format, type_filter);
+   
+^X
+^X
+
