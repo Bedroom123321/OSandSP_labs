@@ -44,7 +44,7 @@ void scan(const char *path, int list_symlinks, int list_dirs, int list_files, in
 
         // Сохраняем имя файла
         names = realloc(names, sizeof(char *) * (count + 1));
-        names[count] = strdup(entry->d_name);
+        names[count] = strdup(full_path);
         count++;
     }
     closedir(dir);
