@@ -16,12 +16,16 @@ void scan(const char *path, int list_symlinks, int list_dirs, int list_files, in
     size_t count = 0;
 
     if (dir == NULL) {
-        perror("opendir");
         return;
     }
 
     // Считываем имена файлов
     while ((entry = readdir(dir)) != NULL) {
+        // Пропускаем специальные записи "." и ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
         struct stat file_stat;
         char full_path[1024];
 
@@ -33,23 +37,27 @@ void scan(const char *path, int list_symlinks, int list_dirs, int list_files, in
             continue;
         }
 
-        int is_dir = S_ISDIR(file_stat.st_mode);
         int is_symlink = S_ISLNK(file_stat.st_mode);
+        int is_dir = S_ISDIR(file_stat.st_mode);
         int is_file = S_ISREG(file_stat.st_mode);
 
         // Проверка фильтров
-        if ((list_dirs && !is_dir) || (list_files && !is_file) || (list_symlinks && !is_symlink)) {
-            continue;
+        if ((list_dirs && is_dir) || (list_files && is_file) || (list_symlinks && is_symlink)) {
+            // Сохраняем имя файла
+            names = realloc(names, sizeof(char *) * (count + 1));
+            names[count] = strdup(full_path);
+            count++;
         }
 
-        // Сохраняем имя файла
-        names = realloc(names, sizeof(char *) * (count + 1));
-        names[count] = strdup(full_path);
-        count++;
+        //Рекурсия
+        if (is_dir && list_dirs) {
+            scan(full_path, list_symlinks, list_dirs, list_files, sort);
+        }
+
     }
     closedir(dir);
 
-    // Сортируем имена в соответствии с LC_COLLATE, если указано
+    // Сортируем имена, если указано
     if (sort) {
         setlocale(LC_COLLATE, "");
         qsort(names, count, sizeof(char *), compare);
@@ -57,9 +65,11 @@ void scan(const char *path, int list_symlinks, int list_dirs, int list_files, in
 
     // Выводим имена файлов
     for (size_t i = 0; i < count; i++) {
-        printf("%s\n", names[i]);
-        free(names[i]); // Освобождаем память
+        if (names[i] != NULL) {
+            printf("%s\n", names[i]); // Выводим только действительные имена
+            free(names[i]); // Освобождаем память
+        }
     }
-    printf("\n");
     free(names); // Освобождаем массив
+
 }

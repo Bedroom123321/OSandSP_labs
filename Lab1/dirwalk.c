@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-
 void print_usage() {
     printf("Usage: dirwalk [dir] [options]\n");
     printf("Options:\n");
@@ -24,7 +23,7 @@ int main(int argc, char *argv[]) {
     while ((option = getopt(argc, argv, "ldfs")) != -1) {
         switch (option) {
             case 'l':
-                only_symlinks_flag = 1; // флаг символические ссылки
+                only_symlinks_flag = 1; // флаг только символические ссылки
                 break;
             case 'd':
                 only_dirs_flag = 1; // флаг только каталоги
@@ -41,7 +40,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const char *dir = (optind < argc) ? argv[optind] : "/";
+    const char *dir;
+
+    if (optind < argc) {
+        dir = argv[optind]; // Используем аргумент командной строки
+    } else {
+        dir = "/home/bedroom"; // Используем значение по умолчанию
+    }
 
     scan(dir, only_symlinks_flag, only_dirs_flag, only_files_flag,  sort_flag);
     return 0;
