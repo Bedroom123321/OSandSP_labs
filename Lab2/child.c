@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 
-void print_env_vars_from_file(const char *filename)
+void env_from_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (!file)
@@ -25,7 +25,7 @@ void print_env_vars_from_file(const char *filename)
     fclose(file);
 }
 
-void print_env_from_envp(char **envp)
+void env_from_envp(char **envp)
 {
     for (char** env = envp; *env; env++)
     {
@@ -39,11 +39,11 @@ int main(int argc, char *argv[], char *envp[])
 
     if (argc > 1)
     {
-        print_env_vars_from_file(argv[1]);
+        env_from_file(argv[1]);
     }
     else
     {
-        print_env_from_envp(envp);
+        env_from_envp(envp);
     }
 
     return 0;

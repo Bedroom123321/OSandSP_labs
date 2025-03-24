@@ -3,14 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <locale.h>
 
 #define MAX_CHILD 99
 #define MAX_ENV 1024
 
-extern int setenv(const char *name, const char *value, int overwrite);
-
 int compare(const void *a, const void *b) {
-    return strcmp(*(const char **)a, *(const char **)b);
+    return strcoll(*(const char **)a, *(const char **)b);
 }
 
 void print_env_vars(void) {
@@ -21,6 +20,7 @@ void print_env_vars(void) {
     for (char **env = environ; *env; env++) {
         env_list[count++] = *env;
     }
+
     qsort(env_list, count, sizeof(char *), compare);
 
     for (int i = 0; i < count; i++) {
@@ -33,7 +33,7 @@ void read_env_file(char *envp[], int *env_count)
     FILE *file = fopen("env.txt", "r");
     if (!file)
     {
-        perror("Error of opening env");
+        perror("Error of opening env.txt");
         exit(EXIT_FAILURE);
     }
 
@@ -76,12 +76,6 @@ void creat_child(int child_num, int mode)
     char child_name[16];
     snprintf(child_name, sizeof(child_name), "child_%02d", child_num);
 
-    if (access(child_exec, X_OK) != 0)
-    {
-        perror("Child acces error");
-        return;
-    }
-
     char *envp[11];
     int env_count;
     read_env_file(envp, &env_count);
@@ -92,8 +86,6 @@ void creat_child(int child_num, int mode)
         if (fork() == 0)
         {
             execve(child_exec, argv, envp);
-            perror("Error execve");
-            exit(EXIT_FAILURE);
         }
     }
     else if (mode == 0)
@@ -102,8 +94,6 @@ void creat_child(int child_num, int mode)
         if (fork() == 0)
         {
             execve(child_exec, argv, envp);
-            perror("Error execve");
-            exit(EXIT_FAILURE);
         }
     }
 
