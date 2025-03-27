@@ -12,14 +12,14 @@ void env_from_file(const char *filename)
         exit(EXIT_FAILURE);
     }
 
-    char line[256];
-    while (fgets(line, sizeof(line), file))
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), file))
     {
-        line[strcspn(line, "\n")] = 0;
-        char *value = getenv(line);
+        buffer[strcspn(buffer, "\n")] = 0;
+        char *value = getenv(buffer);
         if (value)
         {
-            printf("%s=%s\n", line, value);
+            printf("%s=%s\n", buffer, value);
         }
     }
     fclose(file);

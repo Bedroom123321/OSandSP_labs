@@ -17,7 +17,7 @@ void print_env_vars(void) {
     char *env_list[MAX_ENV];
     int count = 0;
 
-    for (char **env = environ; *env; env++) {
+    for (char **env = environ; *env != NULL; env++) {
         env_list[count++] = *env;
     }
 
@@ -31,28 +31,23 @@ void print_env_vars(void) {
 void read_env_file(char *envp[], int *env_count)
 {
     FILE *file = fopen("env.txt", "r");
-    if (!file)
-    {
-        perror("Error of opening env.txt");
-        exit(EXIT_FAILURE);
-    }
 
-    char line[256];
+    char buffer[256];
     int count = 0;
-    while (fgets(line, sizeof(line), file))
+    while (fgets(buffer, sizeof(buffer), file))
     {
-        line[strcspn(line, "\n")] = 0;
-        char *value = getenv(line);
+        buffer[strcspn(buffer, "\n")] = 0;
+        char *value = getenv(buffer);
         if (value)
         {
-            size_t length = strlen(line) + strlen(value) + 2;
+            size_t length = strlen(buffer) + strlen(value) + 2;
             envp[count] = malloc(length);
             if (!envp[count])
             {
                 perror("Error malloc");
                 exit(EXIT_FAILURE);
             }
-            snprintf(envp[count], length, "%s=%s", line, value);
+            snprintf(envp[count], length, "%s=%s", buffer, value);
             count++;
         }
     }
@@ -70,13 +65,13 @@ void creat_child(int child_num, int mode)
         return;
     }
 
-    char child_exec[256];
-    snprintf(child_exec, sizeof(child_exec), "%s/child", child_path);
+    char child[256];
+    snprintf(child, sizeof(child), "%s/child", child_path);
 
     char child_name[16];
     snprintf(child_name, sizeof(child_name), "child_%02d", child_num);
 
-    char *envp[11];
+    char *envp[10];
     int env_count;
     read_env_file(envp, &env_count);
 
@@ -85,7 +80,7 @@ void creat_child(int child_num, int mode)
         char *argv[] = {child_name, "env.txt", NULL};
         if (fork() == 0)
         {
-            execve(child_exec, argv, envp);
+            execve(child, argv, envp);
         }
     }
     else if (mode == 0)
@@ -93,7 +88,7 @@ void creat_child(int child_num, int mode)
         char *argv[] = {child_name, NULL};
         if (fork() == 0)
         {
-            execve(child_exec, argv, envp);
+            execve(child, argv, envp);
         }
     }
 
@@ -108,19 +103,23 @@ int main(void)
     print_env_vars();
 
     int child_num = 0;
-    char command;
+    char symbol;
     while (1)
     {
-        command = getchar();
-        if (command == '+')
+        symbol = getchar();
+        if (symbol == '+')
         {
-            if (child_num < MAX_CHILD) creat_child(child_num++, 1);
+            if (child_num < MAX_CHILD) {
+                creat_child(child_num++, 1);
+            }
         }
-        else if (command == '*')
+        else if (symbol == '*')
         {
-            if (child_num < MAX_CHILD) creat_child(child_num++, 0);
+            if (child_num < MAX_CHILD) {
+                creat_child(child_num++, 0);
+            }
         }
-        else if (command == 'q')
+        else if (symbol == 'q')
         {
             break;
         }
