@@ -10,7 +10,6 @@
 #define CYCLE_LIMIT 101
 #define MAX_CHILDREN 100
 
-/* Глобальные переменные */
 pid_t children[MAX_CHILDREN];
 int child_count = 0;
 
@@ -27,11 +26,10 @@ void parent_sigusr1_handler(int signo, siginfo_t *info, void *context) {
     pid_t child_pid = info->si_pid;
     printf("Parent (PID=%d): Received signal from child (PID=%d)\n",
            getpid(), child_pid);
-    fflush(stdout);
     kill(child_pid, SIGUSR2);
 }
 
-void setup_parent_signal_handlers(void) {
+void setup_parent_signal_handlers() {
     struct sigaction sa;
     sa.sa_sigaction = parent_sigusr1_handler;
     sa.sa_flags = SA_SIGINFO;
@@ -59,7 +57,7 @@ void child_sigusr2_handler(int signo) {
     (void)signo;
 }
 
-void setup_child_signal_handlers(void) {
+void setup_child_signal_handlers() {
     struct sigaction sa;
     sa.sa_handler = child_sigusr1_handler;
     sigemptyset(&sa.sa_mask);
@@ -76,22 +74,20 @@ void setup_child_signal_handlers(void) {
     }
 }
 
-void child_process(void) {
+void child_process() {
     setup_child_signal_handlers();
 
     struct timespec ts = { .tv_sec = 0, .tv_nsec = 100 * 1000000 };
     int toggle = 0;
 
-    for(;;) {
+    while(1) {
         nanosleep(&ts, NULL);
 
         if(toggle) {
             data.a = 0;
-            for(int i = 0; i < 100000; i++); // Имитация работы
             data.b = 0;
         } else {
             data.a = 1;
-            for(int i = 0; i < 100000; i++); // Имитация работы
             data.b = 1;
         }
         toggle = !toggle;
@@ -103,26 +99,20 @@ void child_process(void) {
             pause();
             printf("Child: PPID=%d, PID=%d, Stats: (0,0)=%d, (0,1)=%d, (1,0)=%d, (1,1)=%d\n",
                    getppid(), getpid(), count00, count01, count10, count11);
-            fflush(stdout);
 
-            /* Сброс статистики */
             count00 = count01 = count10 = count11 = 0;
             cycle_count = 0;
         }
     }
 }
 
-void create_child(void) {
+void create_child() {
     if(child_count >= MAX_CHILDREN) {
         printf("Maximum children limit (%d) reached\n", MAX_CHILDREN);
         return;
     }
 
     pid_t pid = fork();
-    if(pid < 0) {
-        perror("fork");
-        return;
-    }
 
     if(pid == 0) {
         child_process();
@@ -131,10 +121,9 @@ void create_child(void) {
 
     children[child_count++] = pid;
     printf("Created child %d (PID=%d)\n", child_count, pid);
-    fflush(stdout);
 }
 
-void kill_last_child(void) {
+void kill_last_child_process() {
     if(child_count == 0) {
         printf("No children to kill\n");
         return;
@@ -143,51 +132,52 @@ void kill_last_child(void) {
     pid_t pid = children[--child_count];
     kill(pid, SIGTERM);
     waitpid(pid, NULL, 0);
-    printf("Killed child (PID=%d), remaining: %d\n", pid, child_count);
+    printf("Killed child process (PID=%d), remaining: %d\n", pid, child_count);
     fflush(stdout);
 }
 
-void list_children(void) {
-    printf("Active children (%d):\n", child_count);
+void list_children() {
+    printf("Active child processes (%d):\n", child_count);
     for(int i = 0; i < child_count; i++) {
         printf("  %d: PID=%d\n", i+1, children[i]);
     }
-    fflush(stdout);
 }
 
-void kill_all_children(void) {
+void kill_all_child_processes() {
     for(int i = 0; i < child_count; i++) {
         kill(children[i], SIGTERM);
         waitpid(children[i], NULL, 0);
     }
     child_count = 0;
-    printf("All children killed\n");
-    fflush(stdout);
+    printf("All child processes killed\n");
 }
 
-int main(void) {
+void exit_the_program() {
+    if (child_count != 0) {
+        kill_all_child_processes();
+    }
+    printf("Parent exiting\n");
+    exit(EXIT_SUCCESS);
+}
+
+int main() {
     setup_parent_signal_handlers();
     printf("Parent process started (PID=%d)\n", getpid());
     printf("Commands: + (create), - (kill last), l (list), k (kill all), q (quit)\n");
-    fflush(stdout);
 
     while(1) {
-        int cmd = getchar();
-        if(cmd == EOF) continue;
+        int symbol = getchar();
+        if(symbol == EOF) continue;
 
-        switch(cmd) {
+        switch(symbol) {
             case '+': create_child(); break;
-            case '-': kill_last_child(); break;
+            case '-': kill_last_child_process(); break;
             case 'l': list_children(); break;
-            case 'k': kill_all_children(); break;
-            case 'q':
-                kill_all_children();
-                printf("Parent exiting\n");
-                exit(EXIT_SUCCESS);
-            case '\n': break; // Игнорируем символ новой строки
+            case 'k': kill_all_child_processes(); break;
+            case 'q': exit_the_program(); break;
+            case '\n': break;
             default:
-                printf("Unknown command: '%c'\n", cmd);
-                fflush(stdout);
+                printf("Unknown command: '%c'\n", symbol);
         }
     }
 }
