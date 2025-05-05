@@ -7,7 +7,7 @@
 #include <time.h>
 
 #define FIXED_SIZE 1000
-#define INITIAL_QUEUE_SIZE 10
+#define QUEUE_SIZE 10
 
 typedef struct {
     unsigned char type;
@@ -23,7 +23,7 @@ unsigned long producedCount = 0;
 unsigned long consumedCount = 0;
 int producers = 0;
 int consumers = 0;
-int current_queue_size = INITIAL_QUEUE_SIZE;
+int current_queue_size = QUEUE_SIZE;
 
 pthread_mutex_t mutex;
 sem_t empty_count;
@@ -48,12 +48,10 @@ int verify_hash(const message_t *msg) {
 void fill_random_message(message_t *msg) {
     msg->type = (unsigned char)(rand() % 256);
     msg->size = (unsigned char)(rand() % 256);
-    for (int i = 0; i < msg->size; i++) {
+    for (int i = 0; i < 256; i++) {
         msg->data[i] = (unsigned char)(rand() % 256);
     }
-    for (int i = msg->size; i < 256; i++) {
-        msg->data[i] = 0;
-    }
+
     msg->hash = compute_hash(msg);
 }
 
@@ -70,7 +68,7 @@ void* producer(void* arg) {
         pthread_mutex_unlock(&mutex);
         sem_post(&full_count);
         printf("[Producer %lu] Created message #%lu\n", pthread_self(), producedNow);
-        sleep(1);
+        sleep(3);
     }
     return NULL;
 }
@@ -89,7 +87,7 @@ void* consumer(void* arg) {
         int ok = verify_hash(&msg);
         printf("[Consumer %lu] Consumed message #%lu (hash_ok=%s)\n",
                pthread_self(), consumedNow, ok ? "YES" : "NO");
-        sleep(1);
+        sleep(3);
     }
     return NULL;
 }
@@ -114,9 +112,11 @@ int main(void) {
            "  s - show status\n"
            "  q - exit\n");
 
-    while (1) {
+    int running = 1;
+    while (running) {
+
         int ch = getchar();
-        if (ch == EOF || ch == 'q') break;
+        if (ch == EOF) break;
         if (ch == '\n') continue;
 
         switch (ch) {
@@ -205,6 +205,9 @@ int main(void) {
                        producers, consumers, producedCount, consumedCount,
                        current_queue_size, used);
                 pthread_mutex_unlock(&mutex);
+                break;
+            case 'q':
+                running = 0;
                 break;
             default:
                 printf("Unknown command '%c'\n", ch);
