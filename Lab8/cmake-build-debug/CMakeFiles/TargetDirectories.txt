@@ -1,0 +1,4 @@
+/home/bedroom/OSandSP/Lab8/cmake-build-debug/CMakeFiles/server.dir
+/home/bedroom/OSandSP/Lab8/cmake-build-debug/CMakeFiles/client.dir
+/home/bedroom/OSandSP/Lab8/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/bedroom/OSandSP/Lab8/cmake-build-debug/CMakeFiles/rebuild_cache.dir
